@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Button } from '@/components/ui/home/LandingButton';
+import { Button } from './LandingButton';
 import { SignInButton, UserButton, SignedIn, SignedOut } from '@clerk/nextjs';
 
 const Navbar = () => {

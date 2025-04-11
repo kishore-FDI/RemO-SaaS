@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/home/LandingButton";
+import { Button } from "@/components/ui/LandingButton";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Navbar from './components/Navbar';
 

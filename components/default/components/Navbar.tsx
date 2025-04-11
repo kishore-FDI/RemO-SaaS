@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import motion from "framer-motion";
+import { UserButton } from "@clerk/nextjs";
 const Navbar = ({ user }: any) => {
   return (
     <section className='flex justify-between bg-[#1e1e2d] p-4 px-5'>
@@ -9,17 +10,7 @@ const Navbar = ({ user }: any) => {
         <div>ReMo</div>
       </section>
       <div>
-        {user && (
-          // <button onClick={() => setIsProfile(!isProfile)}>
-          <Image
-            src={user?.imageUrl}
-            width={40}
-            height={40}
-            className=' rounded-full'
-            alt={""}
-          />
-          // </button>
-        )}
+        <UserButton/>
       </div>
     </section>
   );
