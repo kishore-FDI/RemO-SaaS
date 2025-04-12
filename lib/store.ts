@@ -1,3 +1,4 @@
+'use client'
 // stores/companyStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -10,14 +11,14 @@ interface Company {
 
 interface CompanyState {
   selectedCompany: Company | null;
-  setSelectedCompany: (company: Company) => void;
+  setSelectedCompany: (company: Company | null) => void;
 }
 
 export const useCompanyStore = create<CompanyState>()(
   persist(
     (set) => ({
       selectedCompany: null,
-      setSelectedCompany: (company: Company) => set({ selectedCompany: company }),
+      setSelectedCompany: (company: Company | null) => set({ selectedCompany: company }),
     }),
     {
       name: "selectedCompany", // localStorage key
@@ -27,6 +28,20 @@ export const useCompanyStore = create<CompanyState>()(
 );
 
 
-interface user{
-  a:string
+interface FeatureState{
+  title:string ;
+  setTitle:(title:string) => void;
 }
+
+export const useFeature=create<FeatureState>()(
+  persist(
+    (set) => ({
+      title: "",
+      setTitle: (title: string ) => set({ title }),
+    }),
+    {
+      name: "feature", // localStorage key
+      partialize: (state) => ({ title: state.title }),
+    }
+  )
+);
