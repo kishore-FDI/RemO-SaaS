@@ -78,10 +78,10 @@ const features = [
 
 const SidebarMenuSubItem = ({ icon: Icon, title,state }:any) => {
   const a=useSidebar()
-  const {setTitle}=useFeature()
+  const {setSelectedFeature}=useFeature()
   const setFeature = ({ title }: any) => {
     console.log("Setting title to:", title,state); // ⬅️ log
-    setTitle(title);
+    setSelectedFeature(title);
   };
   
   return (

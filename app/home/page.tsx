@@ -32,7 +32,7 @@ const Home = () => (
 )
 
 const Page = () => {
-  const { title } = useFeature()
+  const { selectedFeature } = useFeature()
 
   // Map state to component dynamically
   const componentsMap: { [key: string]: JSX.Element } = {
@@ -46,10 +46,10 @@ const Page = () => {
   }
 
   // Get the component based on `title`
-  const RenderComponent = useMemo(() => componentsMap[title] || <Home />, [title])
+  const RenderComponent = useMemo(() => componentsMap[selectedFeature] || <Home />, [selectedFeature])
 
   return (
-    <div className="">
+    <div className="w-full">
       <Suspense fallback={<div className="text-gray-400">Loading feature...</div>}>
         {RenderComponent}
       </Suspense>

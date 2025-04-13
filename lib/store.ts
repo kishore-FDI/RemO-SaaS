@@ -29,19 +29,19 @@ export const useCompanyStore = create<CompanyState>()(
 
 
 interface FeatureState{
-  title:string ;
-  setTitle:(title:string) => void;
+  selectedFeature:string ;
+  setSelectedFeature:(title:string) => void;
 }
 
 export const useFeature=create<FeatureState>()(
   persist(
     (set) => ({
-      title: "",
-      setTitle: (title: string ) => set({ title }),
+      selectedFeature: "",
+      setSelectedFeature: (selectedFeature: string ) => set({ selectedFeature }),
     }),
     {
       name: "feature", // localStorage key
-      partialize: (state) => ({ title: state.title }),
+      partialize: (state) => ({ selectedFeature: state.selectedFeature }),
     }
   )
 );

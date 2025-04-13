@@ -10,8 +10,8 @@ export default async function HomeLayout({ children }: { children: React.ReactNo
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar />
-      <main>
-        <SidebarTrigger />
+      <main className="w-full">
+        <SidebarTrigger className="fixed" />
         {children}
       </main>
     </SidebarProvider>

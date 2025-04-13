@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("companyId");
+    console.log(companyId)
 
     if (!companyId) {
       return NextResponse.json(
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
         },
       },
     });
-
+    console.log(companyMembers)
     return NextResponse.json(companyMembers);
   } catch (error) {
     console.error("Company members fetch error:", error);
