@@ -1,22 +1,21 @@
-// app/api/projects/[projectId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import {prisma} from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  context: { params: Promise<{ projectId: string }> }
 ) {
   try {
-    const projectId = await params.projectId;
-    
+    const { projectId } = await context.params;
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
     });
-    
+
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
-    
+
     const members = await prisma.projectMember.findMany({
       where: { projectId },
       include: {
@@ -29,11 +28,11 @@ export async function GET(
         },
       },
     });
-    
+
     const tasks = await prisma.task.findMany({
       where: { projectId, archived: false },
     });
-    
+
     return NextResponse.json({
       project,
       members,
