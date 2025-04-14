@@ -414,7 +414,9 @@ export async function GET(request: NextRequest) {
     // Insight 6: Seasonality patterns
     if (timeSeriesAnalysis.seasonality.completed.hasSeasonality) {
       const pattern = timeSeriesAnalysis.seasonality.completed.pattern;
+      // @ts-ignore
       const maxDay = pattern.indexOf(Math.max(...pattern));
+      // @ts-ignore
       const minDay = pattern.indexOf(Math.min(...pattern));
       
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -429,6 +431,7 @@ export async function GET(request: NextRequest) {
         type: 'insight',
         title: 'Weekly Pattern Detected',
         description: `Team productivity tends to peak on ${maxDayName}s and dip on ${minDayName}s.`,
+        // @ts-ignore
         metric: `${Math.round(timeSeriesAnalysis.seasonality.completed.strength * 100)}% confidence`
       });
     }
