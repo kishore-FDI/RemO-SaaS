@@ -23,7 +23,7 @@ const EditProject = dynamic(() => import('./EditTask'), {
   loading: () => <p className="text-muted-foreground">Loading editor...</p>,
 })
 
-const ProjectAnalytics = dynamic(() => import('./ProjectAnalytics'), {
+const ProjectAnalytics = dynamic(() => import('./Test'), {
   loading: () => <p className="text-muted-foreground">Loading analytics...</p>,
 })
 

@@ -10,6 +10,11 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
   
+  // Allow all API requests to pass through - they should handle their own auth
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+  
   // Await the authentication data from Clerk.
   const authData = await auth();
   

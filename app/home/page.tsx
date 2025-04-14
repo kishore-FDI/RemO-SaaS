@@ -1,9 +1,10 @@
 'use client'
 
-import React, { JSX, Suspense, useMemo } from 'react'
+import React, { JSX, Suspense, useMemo,useState } from 'react'
 import { useFeature } from '@/lib/store'
 import dynamic from 'next/dynamic'
-
+import DraggableHRAssistant from '@/components/RemoAi/DraggableHRAssistant'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // Dynamically import components
 const Createmeeting = dynamic(() => import('@/components/meeting/Createmeeting'), {
   suspense: true,
@@ -47,13 +48,16 @@ const Page = () => {
 
   // Get the component based on `title`
   const RenderComponent = useMemo(() => componentsMap[selectedFeature] || <Home />, [selectedFeature])
-
+  const [client] = useState(() => new QueryClient());
   return (
+    <QueryClientProvider client={client}>
     <div className="w-full">
       <Suspense fallback={<div className="text-gray-400">Loading feature...</div>}>
         {RenderComponent}
       </Suspense>
+      <DraggableHRAssistant/>
     </div>
+    </QueryClientProvider>
   )
 }
 

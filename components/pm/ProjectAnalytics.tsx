@@ -1,20 +1,10 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { RefreshCcw, ArrowLeft, Calendar, Clock, Zap, TrendingUp, Award, AlertTriangle, CheckCircle, Users } from 'lucide-react'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import Link from 'next/link'
+import { RefreshCcw, ArrowLeft, Calendar, Clock, Zap, TrendingUp, AlertTriangle, CheckCircle,  } from 'lucide-react'
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
   LineChart, Line, CartesianGrid, Area, AreaChart, RadarChart, PolarGrid, PolarAngleAxis, 
@@ -37,173 +27,17 @@ import {
 } from "@/components/ui/select"
 
 // Types
-type AnalyticsData = {
-  project: {
-    id: string
-    title: string
-    description: string
-    createdAt: string
-    updatedAt: string
-  }
-  taskMetrics: {
-    total: number
-    completed: number
-    incomplete: number
-    archived: number
-  }
-  tasksByDueDate: {
-    overdue: number
-    dueToday: number
-    dueThisWeek: number
-    dueLater: number
-    noDueDate: number
-  }
-  taskActivityOverTime: {
-    date: string
-    created: number
-    completed: number
-  }[]
-  memberPerformance: {
-    userId: string
-    name: string
-    tasksAssigned: number
-    tasksCompleted: number
-  }[]
-}
-
-type CustomTooltipProps = {
-  active?: boolean
-  payload?: any[]
-  label?: string
-}
+import { AnalyticsData,CustomTooltipProps } from './analytics/AnalyticsTypes'
 
 // Enhanced data calculation utilities
-const calculateTrends = (data: AnalyticsData['taskActivityOverTime']) => {
-  if (!data || data.length < 2) return { created: 0, completed: 0 };
-  
-  const firstHalf = data.slice(0, Math.floor(data.length / 2));
-  const secondHalf = data.slice(Math.floor(data.length / 2));
-  
-  const firstHalfCreated = firstHalf.reduce((acc, day) => acc + day.created, 0);
-  const secondHalfCreated = secondHalf.reduce((acc, day) => acc + day.created, 0);
-  
-  const firstHalfCompleted = firstHalf.reduce((acc, day) => acc + day.completed, 0);
-  const secondHalfCompleted = secondHalf.reduce((acc, day) => acc + day.completed, 0);
-  
-  const createdTrend = firstHalfCreated === 0 ? 
-    secondHalfCreated * 100 : 
-    ((secondHalfCreated - firstHalfCreated) / firstHalfCreated) * 100;
-    
-  const completedTrend = firstHalfCompleted === 0 ? 
-    secondHalfCompleted * 100 : 
-    ((secondHalfCompleted - firstHalfCompleted) / firstHalfCompleted) * 100;
-  
-  return {
-    created: Math.round(createdTrend),
-    completed: Math.round(completedTrend)
-  };
-};
-
-const calculateProjectHealth = (data: AnalyticsData) => {
-  // Define weights
-  const weights = {
-    completionRate: 0.4,
-    overdueRate: 0.3,
-    activityLevel: 0.3
-  };
-  
-  // Calculate completion rate (0-100)
-  const completionRate = data.taskMetrics.total > 0 ? 
-    (data.taskMetrics.completed / data.taskMetrics.total) * 100 : 0;
-  
-  // Calculate overdue rate (0-100, inversed so higher is better)
-  const totalActiveTasks = data.taskMetrics.total - data.taskMetrics.archived;
-  const overdueRate = totalActiveTasks > 0 ? 
-    100 - ((data.tasksByDueDate.overdue / totalActiveTasks) * 100) : 100;
-  
-  // Calculate recent activity level (0-100)
-  const recentDays = data.taskActivityOverTime.slice(-7);
-  const maxActivity = 10; // Assuming 10 tasks per day is very active
-  const avgActivity = recentDays.reduce((acc, day) => 
-    acc + day.created + day.completed, 0) / (recentDays.length * 2);
-  const activityLevel = Math.min((avgActivity / maxActivity) * 100, 100);
-  
-  // Calculate weighted health score
-  const healthScore = (
-    completionRate * weights.completionRate + 
-    overdueRate * weights.overdueRate + 
-    activityLevel * weights.activityLevel
-  );
-  
-  // Determine health status
-  let healthStatus;
-  if (healthScore >= 80) healthStatus = 'Excellent';
-  else if (healthScore >= 60) healthStatus = 'Good';
-  else if (healthScore >= 40) healthStatus = 'Fair';
-  else healthStatus = 'Needs Attention';
-  
-  return {
-    score: Math.round(healthScore),
-    status: healthStatus,
-    details: {
-      completionRate: Math.round(completionRate),
-      overdueRate: Math.round(overdueRate),
-      activityLevel: Math.round(activityLevel)
-    }
-  };
-};
-
-// Enhanced visualization components
-const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-background p-3 border rounded-md shadow-md">
-        <p className="font-medium">{label}</p>
-        {payload.map((entry, index) => (
-          <p key={`item-${index}`} style={{ color: entry.color }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
-const calculateCumulativeActivityData = (data: AnalyticsData['taskActivityOverTime']) => {
-  let cumCreated = 0;
-  let cumCompleted = 0;
-  
-  return data.map(day => {
-    cumCreated += day.created;
-    cumCompleted += day.completed;
-    
-    return {
-      ...day,
-      cumulativeCreated: cumCreated,
-      cumulativeCompleted: cumCompleted,
-      backlog: cumCreated - cumCompleted
-    };
-  });
-};
-
-const COLORS = [
-  '#4f46e5', // indigo
-  '#06b6d4', // cyan
-  '#10b981', // emerald
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#6366f1', // indigo-500
-];
+import { calculateTrends, calculateProjectHealth, CustomTooltip,calculateCumulativeActivityData,COLORS } from './analytics/AnalyticsHelperFunctions'
+import Loading, { Error } from './analytics/Loading'
 
 export default function ProjectAnalytics({ projectId, onBack }: { projectId: string, onBack: () => void }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState<'7days' | '14days' | '30days'>('14days')
-  const router = useRouter()
 
   const fetchAnalytics = async () => {
     setLoading(true)
@@ -245,56 +79,16 @@ export default function ProjectAnalytics({ projectId, onBack }: { projectId: str
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-5 w-72 mt-2" />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-40" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-5 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[...Array(2)].map((_, i) => (
-            <Card key={i} className="p-6">
-              <CardHeader>
-                <Skeleton className="h-6 w-40" />
-              </CardHeader>
-              <CardContent className="h-72">
-                <Skeleton className="w-full h-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <Loading/>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 rounded-lg p-6 border border-red-200">
-        <h3 className="text-lg font-medium text-red-800 mb-2">Error loading analytics</h3>
-        <p className="text-red-600">{error}</p>
-        <Button onClick={fetchAnalytics} variant="outline" className="mt-4">
-          <RefreshCcw className="w-4 h-4 mr-2" /> Try Again
-        </Button>
-      </div>
+      <Error
+      fetchAnalytics={fetchAnalytics}
+      error={error}
+      />
     )
   }
 
@@ -495,6 +289,8 @@ export default function ProjectAnalytics({ projectId, onBack }: { projectId: str
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="activity">Activity Trends</TabsTrigger>
           <TabsTrigger value="team">Team Performance</TabsTrigger>
+          <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
+          <TabsTrigger value="forecasting">Forecasting</TabsTrigger>
         </TabsList>
         
         {/* Overview Tab */}
@@ -970,9 +766,374 @@ export default function ProjectAnalytics({ projectId, onBack }: { projectId: str
             })}
           </div>
         </TabsContent>
+        {/* AI Insights Tab */}
+        <TabsContent value="ai-insights" className="space-y-6">
+          {/* AI Insights Cards */}
+          {analyticsData.aiInsights && analyticsData.aiInsights.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {analyticsData.aiInsights.map((insight, index) => (
+                <Card key={index} className={`border-l-4 ${
+                  insight.type === 'positive' ? 'border-l-green-500' :
+                  insight.type === 'negative' ? 'border-l-red-500' :
+                  insight.type === 'warning' ? 'border-l-amber-500' : 'border-l-blue-500'
+                }`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-base font-medium">{insight.title}</CardTitle>
+                      <div className={`text-xs px-2 py-1 rounded-full ${
+                        insight.type === 'positive' ? 'bg-green-100 text-green-800' :
+                        insight.type === 'negative' ? 'bg-red-100 text-red-800' :
+                        insight.type === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {insight.type.charAt(0).toUpperCase() + insight.type.slice(1)}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <p className="text-sm">{insight.description}</p>
+                      <div className="font-medium">{insight.metric}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Insights</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Not enough data to generate AI insights yet. Continue using the project to receive personalized insights.</p>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Business Metrics */}
+          {analyticsData.businessMetrics && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Cycle Time */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between">
+                    <CardTitle className="text-sm font-medium">Avg. Cycle Time</CardTitle>
+                    <Clock className="w-4 h-4 text-blue-500" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col">
+                    <div className="text-2xl font-bold">
+                      {analyticsData.businessMetrics.cycleTime !== null ? 
+                        `${analyticsData.businessMetrics.cycleTime} days` : 'N/A'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Avg. time to complete tasks
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Throughput */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between">
+                    <CardTitle className="text-sm font-medium">Throughput</CardTitle>
+                    <Zap className="w-4 h-4 text-amber-500" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col">
+                    <div className="text-2xl font-bold">
+                      {analyticsData.businessMetrics.throughput} tasks/day
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Completion rate
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* On-Time Delivery */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between">
+                    <CardTitle className="text-sm font-medium">On-Time Delivery</CardTitle>
+                    <Calendar className="w-4 h-4 text-green-500" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col">
+                    <div className="text-2xl font-bold">
+                      {analyticsData.businessMetrics.onTimeDelivery !== null ? 
+                        `${analyticsData.businessMetrics.onTimeDelivery}%` : 'N/A'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Tasks completed on time
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Risk Assessment */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between">
+                    <CardTitle className="text-sm font-medium">Project Risk</CardTitle>
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col">
+                    <div className="flex items-baseline">
+                      <div className="text-2xl font-bold">
+                        {analyticsData.businessMetrics.riskAssessment.level}
+                      </div>
+                      <div className={`ml-2 text-sm ${
+                        analyticsData.businessMetrics.riskAssessment.level === 'Low' ? 'text-green-500' :
+                        analyticsData.businessMetrics.riskAssessment.level === 'Medium' ? 'text-amber-500' : 'text-red-500'
+                      }`}>
+                        {analyticsData.businessMetrics.riskAssessment.score}/100
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Risk assessment score
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          
+          {/* Estimated Completion */}
+          {analyticsData.businessMetrics?.estimatedCompletion && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Estimated Completion</CardTitle>
+                <CardDescription>
+                  Based on current velocity and remaining work
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span>Estimated completion date:</span>
+                    <span className="font-medium">
+                      {new Date(analyticsData.businessMetrics.estimatedCompletion.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Days remaining:</span>
+                    <span className="font-medium">
+                      {analyticsData.businessMetrics.estimatedCompletion.daysRemaining}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Tasks remaining:</span>
+                    <span className="font-medium">
+                      {analyticsData.taskMetrics.incomplete}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        {/* Forecasting Tab */}
+        <TabsContent value="forecasting" className="space-y-6">
+          {analyticsData.timeSeriesAnalysis ? (
+            <>
+              {/* Task Forecast Chart */}
+              <Card className="p-6">
+                <CardHeader className="px-0 pt-0">
+                  <CardTitle>Task Forecast (Next 7 Days)</CardTitle>
+                  <CardDescription>
+                    Predicted task creation and completion based on historical patterns
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={[
+                        ...analyticsData.taskActivityOverTime.slice(-14),
+                        ...analyticsData.timeSeriesAnalysis.forecast.dates.map((date, i) => ({
+                          date,
+                          created: analyticsData.timeSeriesAnalysis?.forecast.created[i] || 0,
+                          completed: analyticsData.timeSeriesAnalysis?.forecast.completed[i] || 0,
+                          isForecast: true
+                        }))
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis 
+                        dataKey="date" 
+                        angle={-45} 
+                        textAnchor="end" 
+                        height={70} 
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="created" name="Actual Created" fill="#8884d8" />
+                      <Bar dataKey="completed" name="Actual Completed" fill="#82ca9d" />
+                      <Line 
+                        dataKey="created" 
+                        name="Forecast Created" 
+                        stroke="#8884d8" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        activeDot={false}
+                        connectNulls
+                      />
+                      <Line 
+                        dataKey="completed" 
+                        name="Forecast Completed" 
+                        stroke="#82ca9d" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        activeDot={false}
+                        connectNulls
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              
+              {/* Seasonality Analysis */}
+              {(analyticsData.timeSeriesAnalysis.seasonality.created.hasSeasonality || 
+                analyticsData.timeSeriesAnalysis.seasonality.completed.hasSeasonality) && (
+                <Card className="p-6">
+                  <CardHeader className="px-0 pt-0">
+                    <CardTitle>Weekly Patterns</CardTitle>
+                    <CardDescription>
+                      Detected seasonality in task creation and completion
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0 h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={(() => {
+                          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                          const today = new Date();
+                          const startOfWeek = new Date(today);
+                          startOfWeek.setDate(today.getDate() - today.getDay());
+                          
+                          return analyticsData.timeSeriesAnalysis?.seasonality.created.pattern.map((val, i) => ({
+                            day: dayNames[(startOfWeek.getDay() + i) % 7],
+                            created: val,
+                            completed: analyticsData.timeSeriesAnalysis?.seasonality.completed.pattern[i] || 0
+                          }));
+                        })()}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                        <XAxis dataKey="day" />
+                        <YAxis />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Bar dataKey="created" name="Avg. Created" fill="#8884d8" />
+                        <Bar dataKey="completed" name="Avg. Completed" fill="#82ca9d" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Anomaly Detection */}
+              <Card className="p-6">
+                <CardHeader className="px-0 pt-0">
+                  <CardTitle>Anomaly Detection</CardTitle>
+                  <CardDescription>
+                    Unusual patterns in task activity
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={analyticsData.taskActivityOverTime.map((day, i) => ({
+                        ...day,
+                        isCompletedAnomaly: analyticsData.timeSeriesAnalysis?.anomalies.completed.some(a => a.index === i),
+                        isCreatedAnomaly: analyticsData.timeSeriesAnalysis?.anomalies.created.some(a => a.index === i),
+                        avgCompleted: analyticsData.timeSeriesAnalysis?.movingAverages.completed[Math.max(0, i - 3)] || null,
+                        avgCreated: analyticsData.timeSeriesAnalysis?.movingAverages.created[Math.max(0, i - 3)] || null
+                      }))}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis 
+                        dataKey="date" 
+                        angle={-45} 
+                        textAnchor="end" 
+                        height={70} 
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="created" name="Tasks Created" fill="#8884d8" />
+                      <Bar dataKey="completed" name="Tasks Completed" fill="#82ca9d" />
+                      <Line 
+                        type="monotone" 
+                        dataKey="avgCreated" 
+                        name="Avg. Created" 
+                        stroke="#8884d8" 
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="avgCompleted" 
+                        name="Avg. Completed" 
+                        stroke="#82ca9d" 
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Scatter 
+                        dataKey="completed" 
+                        data={analyticsData.taskActivityOverTime
+                          .map((day, i) => ({
+                            ...day,
+                            completed: analyticsData.timeSeriesAnalysis?.anomalies.completed.some(a => a.index === i) ? day.completed : null
+                          }))
+                          .filter(day => day.completed !== null)
+                        }
+                        fill="red"
+                        name="Completion Anomalies"
+                      />
+                      <Scatter 
+                        dataKey="created" 
+                        data={analyticsData.taskActivityOverTime
+                          .map((day, i) => ({
+                            ...day,
+                            created: analyticsData.timeSeriesAnalysis?.anomalies.created.some(a => a.index === i) ? day.created : null
+                          }))
+                          .filter(day => day.created !== null)
+                        }
+                        fill="orange"
+                        name="Creation Anomalies"
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Forecasting</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Not enough historical data to generate forecasts. Continue using the project to enable forecasting features.</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
       
-      {/* Project Information Card */}
       <Card>
         <CardHeader>
           <CardTitle>Project Information</CardTitle>

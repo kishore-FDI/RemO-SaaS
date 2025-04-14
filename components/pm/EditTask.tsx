@@ -35,6 +35,7 @@ import {
   Archive, 
   CalendarIcon, 
   CheckSquare,
+  Users
 } from 'lucide-react';
 import { useCompanyStore } from '@/lib/store';
 import { format } from 'date-fns';
@@ -403,6 +404,22 @@ const EditProject: React.FC<EditProjectProps> = ({
           <h1 className="text-2xl font-bold tracking-tight">{editTitle}</h1>
           <p className="text-muted-foreground mt-1">{editDescription || 'No description provided'}</p>
         </div>
+        
+        {/* Add this new section for the Team Members button */}
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Team Members
+          </Button>
+          
+          <Button onClick={handleSave} disabled={isUpdating}>
+            {isUpdating ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       </div>
 
 
@@ -439,6 +456,42 @@ const EditProject: React.FC<EditProjectProps> = ({
             {renderTasksList(filteredTasks)}
           </TabsContent>
         </Tabs>
+      </div>
+
+      {/* Team Member Section - Optional, can be added if you want to display current members */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold">Team Members</h2>
+            <p className="text-muted-foreground text-sm">People working on this project</p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Manage Team
+          </Button>
+        </div>
+        
+        {/* Display current team members */}
+        <div className="flex flex-wrap gap-2">
+          {projectMembers.length > 0 ? (
+            projectMembers.map(member => (
+              <div key={member.id} className="flex items-center gap-2 bg-muted/30 rounded-full px-3 py-1">
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="text-xs">
+                    {getInitials(member.user.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium">{member.user.name}</span>
+              </div>
+            ))
+          ) : (
+            <p className="text-muted-foreground text-sm">No team members added yet</p>
+          )}
+        </div>
       </div>
 
       {/* Members Selection Modal */}
@@ -666,67 +719,67 @@ const EditProject: React.FC<EditProjectProps> = ({
     }
     
     return (
-<div className="space-y-1">
-  {tasks.map(task => (
-    <div key={task.id} className="flex items-center py-2 px-3 hover:bg-muted/10 rounded">
-      {/* Completion checkbox */}
-      <div onClick={() => handleToggleTaskCompletion(task.id, task.completed)} className="cursor-pointer mr-2">
-        {task.completed ? 
-          <CheckCircle2 className="h-4 w-4 text-green-500" /> : 
-          <Circle className="h-4 w-4 text-muted-foreground" />
-        }
-      </div>
-      
-      {/* Task title */}
-      <span className={`text-sm flex-1 ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-        {task.title}
-      </span>
-      
-      {/* Optional: Due date (only if present) */}
-      {task.dueDate && (
-        <span className="text-xs text-muted-foreground mr-3">
-          {formatDate(task.dueDate)}
-        </span>
-      )}
-      
-      {/* Dropdown menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="h-6 w-6 flex items-center justify-center hover:bg-muted/20 rounded">
-            <MoreHorizontal className="h-3 w-3" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => handleToggleTaskCompletion(task.id, task.completed)}>
-            {task.completed ? (
-              <>
-                <Circle className="mr-2 h-4 w-4" />
-                <span>Mark as incomplete</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                <span>Mark as complete</span>
-              </>
+      <div className="space-y-1">
+        {tasks.map(task => (
+          <div key={task.id} className="flex items-center py-2 px-3 hover:bg-muted/10 rounded">
+            {/* Completion checkbox */}
+            <div onClick={() => handleToggleTaskCompletion(task.id, task.completed)} className="cursor-pointer mr-2">
+              {task.completed ? 
+                <CheckCircle2 className="h-4 w-4 text-green-500" /> : 
+                <Circle className="h-4 w-4 text-muted-foreground" />
+              }
+            </div>
+            
+            {/* Task title */}
+            <span className={`text-sm flex-1 ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+              {task.title}
+            </span>
+            
+            {/* Optional: Due date (only if present) */}
+            {task.dueDate && (
+              <span className="text-xs text-muted-foreground mr-3">
+                {formatDate(task.dueDate)}
+              </span>
             )}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleArchiveTask(task.id)}>
-            <Archive className="mr-2 h-4 w-4" />
-            <span>Archive</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={() => handleDeleteTask(task.id)} 
-            className="text-destructive focus:text-destructive"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            <span>Delete</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  ))}
-</div>
+            
+            {/* Dropdown menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-6 w-6 flex items-center justify-center hover:bg-muted/20 rounded">
+                  <MoreHorizontal className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleToggleTaskCompletion(task.id, task.completed)}>
+                  {task.completed ? (
+                    <>
+                      <Circle className="mr-2 h-4 w-4" />
+                      <span>Mark as incomplete</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      <span>Mark as complete</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleArchiveTask(task.id)}>
+                  <Archive className="mr-2 h-4 w-4" />
+                  <span>Archive</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => handleDeleteTask(task.id)} 
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ))}
+      </div>
     );
   }
 };
